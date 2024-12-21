@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use anyhow::Result;
+use nom;
 
 struct StdElement {
     name: u32,
@@ -58,10 +59,45 @@ fn main() -> Result<()> {
 
     // Parse line by line. Each line will add a single element to one of the vectors defined above.
     for line in reader.lines() {
-        
+        let line = line?;
+
+        let (remaining, element_type) = parse_type(line)?;
+        match &element_type.to_uppercase()[0..] {
+            "V" => {
+                let (remaining, name) = get_next(remaining)?;
+                let name = name.parse()?;
+                let (remaining, node_p) = get_next(remaining)?;
+                let node_p = node_p.parse()?;
+                let (remaining, node_n) = get_next(remaining)?;
+                let node_n = node_n.parse()?;
+                let (_remaining, value) = get_next(remaining)?;
+                let value = value.parse()?;
+
+                voltage_sources.push(StdElement {name, node_p, node_n, value})
+            }
+            "I" => {}
+            "R" => {}
+            "C" => {}
+            "L" => {}
+            "D" => {}
+            "QN" => {}
+            "QP" => {}
+            "MN" => {}
+            "MP" => {}
+            _ => panic!("Unexpected element type")
+        }
     }
 
     println!("Done!");
 
     Ok(())
+}
+
+fn parse_type(input: String) -> Result<(String, String)> {
+    Ok(("001 3 4 ".to_string(), "d".to_string()))
+}
+
+fn get_next(input: String) -> Result<(String, String)> {
+
+    Ok(("string".to_string(), "another string".to_string()))
 }
