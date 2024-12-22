@@ -31,6 +31,12 @@ struct BJT {
     node_b: u32,
     node_e: u32,
     value: Option<f64>,
+    polarity: Polarity,
+}
+
+enum Polarity {
+    Ntype,
+    Ptype,
 }
 
 struct MOSFET {
@@ -39,6 +45,7 @@ struct MOSFET {
     node_g: u32,
     node_s: u32,
     value: Option<f64>,
+    polarity: Polarity,
 }
 
 fn main() -> Result<()> {
@@ -73,17 +80,104 @@ fn main() -> Result<()> {
                 let (_remaining, value) = get_next(remaining)?;
                 let value = value.parse()?;
 
-                voltage_sources.push(StdElement {name, node_p, node_n, value})
+                voltage_sources.push(StdElement{name, node_p, node_n, value})
             }
-            "I" => {}
-            "R" => {}
-            "C" => {}
-            "L" => {}
-            "D" => {}
-            "QN" => {}
-            "QP" => {}
-            "MN" => {}
-            "MP" => {}
+            "I" => {
+                let mut iter = remaining.split_whitespace();
+                let name = iter.next().unwrap().parse::<u32>()?;
+                let node_p = iter.next().unwrap().parse::<u32>()?;
+                let node_n = iter.next().unwrap().parse::<u32>()?;
+                let value = iter.next().unwrap().parse::<f64>()?;
+                let is_group_2 = match iter.next() {
+                    Some(_) => Some(true),
+                    None => None
+                };
+
+                current_sources.push(GroupedElement{name, node_p, node_n, value, is_group_2});
+            }
+            "R" => {
+                resistors.push(new_grouped_element(remaining)?);
+            }
+            "C" => {
+                capacitors.push(new_grouped_element(remaining)?);
+            }
+            "L" => {
+                let mut iter = remaining.split_whitespace();
+                let name = iter.next().unwrap().parse::<u32>()?;
+                let node_p = iter.next().unwrap().parse::<u32>()?;
+                let node_n = iter.next().unwrap().parse::<u32>()?;
+                let value = iter.next().unwrap().parse::<f64>()?;
+                
+                inductors.push(StdElement{name, node_p, node_n, value});
+            }
+            "D" => {
+                let mut iter = remaining.split_whitespace();
+                let name = iter.next().unwrap().parse::<u32>()?;
+                let node_p = iter.next().unwrap().parse::<u32>()?;
+                let node_n = iter.next().unwrap().parse::<u32>()?;
+                let value = match iter.next() {
+                    Some(x) => Some(x.parse::<f64>()?),
+                    None => None
+                };
+                
+                diodes.push(Diode{name, node_p, node_n, value});
+            }
+            "QN" => {
+                let mut iter = remaining.split_whitespace();
+                let name = iter.next().unwrap().parse::<u32>()?;
+                let node_c = iter.next().unwrap().parse::<u32>()?;
+                let node_b = iter.next().unwrap().parse::<u32>()?;
+                let node_e = iter.next().unwrap().parse::<u32>()?;
+                let value = match iter.next() {
+                    Some(x) => Some(x.parse::<f64>()?),
+                    None => None
+                };
+                let polarity = Polarity::Ntype;
+                
+                bjts.push(BJT{name, node_c, node_b, node_e, value, polarity});
+            }
+            "QP" => {
+                let mut iter = remaining.split_whitespace();
+                let name = iter.next().unwrap().parse::<u32>()?;
+                let node_c = iter.next().unwrap().parse::<u32>()?;
+                let node_b = iter.next().unwrap().parse::<u32>()?;
+                let node_e = iter.next().unwrap().parse::<u32>()?;
+                let value = match iter.next() {
+                    Some(x) => Some(x.parse::<f64>()?),
+                    None => None
+                };
+                let polarity = Polarity::Ptype;
+                
+                bjts.push(BJT{name, node_c, node_b, node_e, value, polarity});
+            }
+            "MN" => {
+                let mut iter = remaining.split_whitespace();
+                let name = iter.next().unwrap().parse::<u32>()?;
+                let node_d = iter.next().unwrap().parse::<u32>()?;
+                let node_g = iter.next().unwrap().parse::<u32>()?;
+                let node_s = iter.next().unwrap().parse::<u32>()?;
+                let value = match iter.next() {
+                    Some(x) => Some(x.parse::<f64>()?),
+                    None => None
+                };
+                let polarity = Polarity::Ntype;
+                
+                fets.push(MOSFET{name, node_d, node_g, node_s, value, polarity});
+            }
+            "MP" => {
+                let mut iter = remaining.split_whitespace();
+                let name = iter.next().unwrap().parse::<u32>()?;
+                let node_d = iter.next().unwrap().parse::<u32>()?;
+                let node_g = iter.next().unwrap().parse::<u32>()?;
+                let node_s = iter.next().unwrap().parse::<u32>()?;
+                let value = match iter.next() {
+                    Some(x) => Some(x.parse::<f64>()?),
+                    None => None
+                };
+                let polarity = Polarity::Ptype;
+                
+                fets.push(MOSFET{name, node_d, node_g, node_s, value, polarity});
+            }
             _ => panic!("Unexpected element type")
         }
     }
@@ -93,8 +187,29 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn new_grouped_element(remaining: String) -> Result<GroupedElement> {
+    let mut iter = remaining.split_whitespace();
+    let name = iter.next().unwrap().parse::<u32>()?;
+    let node_p = iter.next().unwrap().parse::<u32>()?;
+    let node_n = iter.next().unwrap().parse::<u32>()?;
+    let value = iter.next().unwrap().parse::<f64>()?;
+    let is_group_2 = match iter.next() {
+        Some(_) => Some(true),
+        None => None
+    };
+    
+    Ok(GroupedElement {name, node_p, node_n, value, is_group_2})
+}
+
 fn parse_type(input: String) -> Result<(String, String)> {
-    Ok(("001 3 4 ".to_string(), "d".to_string()))
+    let mut chars = input.chars().peekable();
+
+    let mut element_type = String::new();
+    while chars.peek().unwrap().is_alphabetic() {
+        element_type.push(chars.next().unwrap());
+    }
+
+    Ok((chars.collect(), element_type))
 }
 
 fn get_next(input: String) -> Result<(String, String)> {
