@@ -71,15 +71,12 @@ fn main() -> Result<()> {
         let (remaining, element_type) = parse_type(line)?;
         match &element_type.to_uppercase()[0..] {
             "V" => {
-                let (remaining, name) = get_next(remaining)?;
-                let name = name.parse()?;
-                let (remaining, node_p) = get_next(remaining)?;
-                let node_p = node_p.parse()?;
-                let (remaining, node_n) = get_next(remaining)?;
-                let node_n = node_n.parse()?;
-                let (_remaining, value) = get_next(remaining)?;
-                let value = value.parse()?;
-
+                let mut iter = remaining.split_whitespace();
+                let name = iter.next().unwrap().parse::<u32>()?;
+                let node_p = iter.next().unwrap().parse::<u32>()?;
+                let node_n = iter.next().unwrap().parse::<u32>()?;
+                let value = iter.next().unwrap().parse::<f64>()?;
+                
                 voltage_sources.push(StdElement{name, node_p, node_n, value})
             }
             "I" => {
