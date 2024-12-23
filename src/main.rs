@@ -225,8 +225,3 @@ fn parse_type(input: String) -> Result<(String, String)> {
 
     Ok((chars.collect(), element_type))
 }
-
-fn get_next(input: String) -> Result<(String, String)> {
-
-    Ok(("string".to_string(), "another string".to_string()))
-}
