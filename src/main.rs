@@ -68,6 +68,15 @@ fn main() -> Result<()> {
     for line in reader.lines() {
         let line = line?;
 
+        if line.trim() == "" {
+            continue;
+        }
+
+        let line = match line.split_once('%') {
+            Some((line, _)) => line.to_string(),
+            None => line,
+        };
+
         let (remaining, element_type) = parse_type(line)?;
         match &element_type.to_uppercase()[0..] {
             "V" => {
@@ -178,6 +187,14 @@ fn main() -> Result<()> {
             _ => panic!("Unexpected element type")
         }
     }
+    
+    let num_res = resistors.len();
+    let num_cs = current_sources.len();
+    let num_vs = voltage_sources.len();
+
+    println!("Found {num_res} resistors");
+    println!("Found {num_cs} CS");
+    println!("Found {num_vs} VS");
 
     println!("Done!");
 
