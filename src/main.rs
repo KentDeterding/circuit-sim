@@ -2,6 +2,8 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use anyhow::Result;
 use nom;
+use nalgebra as na;
+use na::{DMatrix};
 
 struct StdElement {
     name: u32,
@@ -195,6 +197,35 @@ fn main() -> Result<()> {
     println!("Found {num_res} resistors");
     println!("Found {num_cs} CS");
     println!("Found {num_vs} VS");
+
+    // Next Topological Constraits & Branch Equations
+    let mut dm = DMatrix::<f64>::zeros(8, 8); // TODO: find node_max and use for initialization
+    let mut group_2_index = 8;
+
+    // Add resistor stamps
+    for res in resistors {
+        match res.is_group_2 {
+            Some(true) => {
+                // use group 2 stamp
+                println!("Inserting as group 2 @ node_p:{} & node_n:{}", res.node_p as usize, res.node_n as usize);
+                println!("after add  :{dm}");
+            }
+            _ => {
+                // use group 1 stamp
+                println!("Inserting node_p:{} & node_n:{}", res.node_p as usize, res.node_n as usize);
+                dm[(res.node_p as usize, res.node_p as usize)] += 1.0 / res.value;
+                dm[(res.node_p as usize, res.node_n as usize)] += -1.0 / res.value;
+                dm[(res.node_n as usize, res.node_p as usize)] += -1.0 / res.value;
+                dm[(res.node_n as usize, res.node_n as usize)] +=  1.0 / res.value;
+                println!("after add  :{dm}");
+            }
+        }
+    }
+
+    // Add VS stamps
+
+    // Add CS stamps
+
 
     println!("Done!");
 

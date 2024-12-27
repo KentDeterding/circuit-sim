@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.94"
 nom = "7"
+nalgebra = "0.33.2"
